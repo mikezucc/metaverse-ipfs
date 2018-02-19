@@ -1,0 +1,18 @@
+{
+  "name": "metaverse-ipfs",
+  "version": "0.0.1",
+  "description": "IPFS pub-sub demo",
+  "main": "app.js",
+  "scripts": {
+    "start": "http-server -c-1 -p 12345 views",
+    "compile": "browserify src/app.js -o public/js/app.js -d"
+  },
+  "author": "Michael Zuccarino <mikezuccarino@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "browserify": "^14.4.0",
+    "http-server": "^0.10.0",
+    "ipfs": "^0.27.3",
+    "ipfs-pubsub-room": "^1.1.3"
+  }
+}

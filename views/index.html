@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>memeverse</title>
+  <script src="https://aframe.io/releases/0.5.0/aframe.min.js"></script>
+  <script src="//cdn.rawgit.com/donmccurdy/aframe-extras/v3.8.3/dist/aframe-extras.min.js"></script>
+  <script src="https://unpkg.com/aframe-lerp-component/dist/aframe-lerp-component.min.js"></script>
+  <script
+			  src="https://code.jquery.com/jquery-3.2.1.min.js"
+			  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+			  crossorigin="anonymous"></script>
+  <script src="js/webrtc-v2.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ipfs/dist/index.js"></script>
+  <!-- possibly useful libraries in the future, it was sort of hard to find all of these -->
+  <!-- <script src="src/objectdetect.js"></script>
+	<script src="src/objectdetect.frontalface_alt.js"></script> -->
+  <!-- <script src="https://github.com/ngokevin/aframe-physics-components/blob/master/dist/aframe-physics-components.min.js"></script> -->
+  <!-- <script src="src/aframe-physics-components.min.js"></script> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script> -->
+  <!-- <script src="//cdn.rawgit.com/donmccurdy/aframe-physics-system/v1.4.0/dist/aframe-physics-system.min.js"></script> -->
+</head>
+<body>
+  <div>
+  <a-scene physics-world="gravity: 0 -4.9 0;" >
+    <a-assets>
+      <a-asset-item id="lowpolysombrero" src="assets/lowpolysombrero.obj"></a-asset-item>
+      <a-asset-item id="lowpolysombreroMaterial" src="assets/lowpolysombrero.mtl"></a-asset-item>
+      <a-asset-item id="memeverselanding" src="assets/memeverselanding.obj"></a-asset-item>
+      <a-asset-item id="memeverselandingMaterial" src="assets/memeverselandingupdate.mtl"></a-asset-item>
+      <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/http://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" />
+    </a-assets>
+    <a-grid static-body id="dagrid" position="0 0 0"></a-grid>
+    <a-grid static-body position="75 0 0"></a-grid>
+    <a-grid static-body position="0 0 -75"></a-grid>
+    <a-grid static-body></a-grid>
+    <a-entity lerp="duration: 200;" id="starterbrero" obj-model="obj: #lowpolysombrero; mtl: #lowpolysombreroMaterial;" scale="0.01 0.01 0.01" position="0 30 0"></a-entity>
+    <a-light color="#fff"  decay="0.5" intensity="0.5" type="ambient" position="25 20 0"></a-light>
+    <a-sky color="#E2ECE2"></a-sky>
+    <a-entity id="camera"
+              camera
+              universal-controls="movementControls: automove, gamepad, keyboard"
+
+              kinematic-body
+              position="2 10 0">
+        <a-light id="player-light" color="#ede" distance="15" intensity="0.4" type="spot"></a-light>
+    </a-entity>
+  </a-scene>
+  <style>
+    img {
+      width: 320px;
+      height: 480px;
+    }
+  </style>
+  <button id="start-stream">your face</button>
+  <img></img>
+  <video style="display : none;" autoplay=true controls></video>
+  <div style="float:left;display:inline;" id="limbo"></div>
+  <div style="width: auto; height: auto; position: fixed; bottom: 0; left: 0; z-index: 1;">
+    <button id="micbutton"><img style="width:50px;height:50px;" id="micimage" src="assets/micbuttonoff.png"></button>
+    <br>
+    <button id="echobutton">Join Our Discord</button><button id="shoot" style="display:none;">SHOOT!</button> <div id="currentBlockCoord" style="background: #F8F8F8; color: #333; font-size: 32px; font:mozillavr;"></div><div id="speechoutput" style="background: #F8F8F8; color: #333; font-size: 48px; font:mozillavr;"></div>
+  </div>
+  </div>
+
+  <script src="bundle.js"></script>
+  <script>
+    window.oncontextmenu = function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    };
+    window.addEventListener('keydown', function(event) {
+      if (event.keyCode == 32) {
+        var el = document.querySelector('a-scene');
+        el.setAttribute('physics-world', {"gravity":{"x":0, "y":-1.2, "z":0}});
+      }
+    });
+  </script>
+</body>
+</html>
