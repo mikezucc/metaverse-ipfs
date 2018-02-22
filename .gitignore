@@ -58,3 +58,5 @@ typings/
 .env
 
 views/bundle.js
+
+views/js/bundle.js

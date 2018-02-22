@@ -1,6 +1,6 @@
 window.onload = function() {
   // intended to create rooms based on current IPFS file identifier
-  var hrefPathComponents = window.href.splice('/');
+  var hrefPathComponents = window.location.pathname.split('/');
   var currentBlock = hrefPathComponents.indexOf("ipfs") != -1 ? hrefPathComponents[hrefPathComponents.indexOf("ipfs")+1] : "city_center";
   var my_peer_id;
 
@@ -11,11 +11,10 @@ window.onload = function() {
 
   // IPFS PubSub Room based example
   // IPFS npm install was missing half of the apparent dependencies
-  // const IPFS = require('ipfs')
   const Room = require('ipfs-pubsub-room')
   var room; // ivar
 
-  const ipfs = new IPFS({
+  const ipfs = new Ipfs({
     repo: repo(),
     EXPERIMENTAL: {
       pubsub: true
@@ -43,12 +42,15 @@ window.onload = function() {
 
     room.on('peer left', (peerid) => {
       console.log("IPFS PUBSUB ROOM >> LEFT >> " + peerid );
+      return;
       var peerBox = document.getElementById('box' + peerid);
-      var position = peerBox.getAttribute('position');
-      var rotation = peerBox.getAttribute('rotation');
-      position.y = 3;
-      for (var i = 0; i < 4; i++) {
-        showQuadDialog(position, rotation, "AVATAR DISCONNECTED");
+      if (peerBox) {
+        var position = peerBox.getAttribute('position');
+        var rotation = peerBox.getAttribute('rotation');
+        position.y = 3;
+        for (var i = 0; i < 4; i++) {
+          showQuadDialog(position, rotation, "AVATAR DISCONNECTED");
+        }
       }
 
       if (peerBox) {
@@ -94,13 +96,27 @@ window.onload = function() {
 
     */
     room.on('message', (message) => {
-      console.log('got message from ' + message.from + ': ' + message.data.toString());
+      console.log('got message from ' + message.from);
       var peerid = message.from;
-      var datagram = message.data;
+      if (peerid === my_peer_id) {
+        console.log("MESSAGE SAME SENDER");
+        return;
+      }
+      var datagram = JSON.parse(message.data);
+      console.log(datagram);
       var message_type = datagram["type"]
       if (message_type === "dg") {
+        /**
+        var message_type = info['type']; // dg
+        var location = info['location'];
+        var rotation = info['rotation'];
+        */
         processDataGram(peerid, datagram);
       } else if (message_type === "avatar-face") {
+        /**
+        var message_type = info['type']; // avatar-face
+        var imageBuffer = datagram['imgbuffer']; // encoded string
+        */
         processAvatarFace(peerid, datagram);
       }
     })
@@ -112,7 +128,8 @@ window.onload = function() {
 
   // Avatar media metadata updates
   function processAvatarFace(peerid, datagram) {
-    var imageBuffer = datagram['imgbuffer'];
+    var imageBuffer = datagram['imagebuffer'];
+    console.log("avatar face received" + imageBuffer);
     var peerBox;
     if (document.getElementById('box' + peerid)) {
       peerBox = document.getElementById('box' + peerid);
@@ -135,11 +152,11 @@ window.onload = function() {
 
   // Avatar positional adata updates
   function processDataGram(peerid, info) {
-    var location = info['location'];
-    var rotation = info['rotation'];
     if ((peerid == null) || (peerid === "") || ("undefined" === typeof peerid)) {
        return
     }
+    var position = info['position'];
+    var rotation = info['rotation'];
 
     // All the components that compose an "avatar"
     // "Templates" of the non-primitives must exist as top level leaves in `a-scene`
@@ -175,9 +192,9 @@ window.onload = function() {
 
 
     var lastIcos = peerBox;
-    var hatPos = location;
+    var hatPos = position;
 
-    peerBox.setAttribute('position', location);
+    peerBox.setAttribute('position', position);
     peerBox.setAttribute('rotation', rotation);
 
     hatPos.y += 2;
@@ -207,11 +224,6 @@ window.onload = function() {
   var contextReceived = canvasReceived.getContext("2d");
   document.querySelector('body').appendChild(canvas);
   document.querySelector('body').appendChild(canvasReceived);
-
-  socket.on('start-stream', function () {
-    startButton.setAttribute('disabled', true)
-    console.log("CONNECTEDCLIENT " + socket.id);
-  })
 
   // deprecated, used to visually signal new messages from peers
   // now it just uses the weird ass eye thing
@@ -251,8 +263,7 @@ window.onload = function() {
   var phoneReady = false;
   document.getElementById('micimage').setAttribute('src', 'assets/micbuttonoff.png');
   function startPhoneSession(my_peer_id) {
-    console.log("phone sesh");
-    console.log(data);
+    console.log("phone sesh with " + my_peer_id);
     phone = PHONE({
         number        : my_peer_id,
         publish_key   : 'pub-c-0258682c-c8c5-42c0-9fe9-990b0741f2b7',
@@ -307,6 +318,10 @@ window.onload = function() {
   var lastPosition = "";
   var lastRotation = "";
   var datagramInterval = setInterval(function() {
+      if ((room == null) || ("undefined" === typeof room)) {
+        console.log("ROOM NOT CONNECTED >> no datagram broadcast");
+        return;
+      }
       // console.log("scheduling datagram push");
       var camera = document.getElementById('camera');
       var position = camera.getAttribute('position');
@@ -317,7 +332,12 @@ window.onload = function() {
       // console.log(position);
       lastRotation = rotation;
       lastPosition = position;
-      socket.emit('avatar-datagram', { 'memecayshun': position, 'memetayshun':rotation, 'memeperp': socket.id });
+      var peers = room.getPeers();
+      for (var peer in peers) {
+        if (peer !== my_peer_id) {
+          room.sendTo(peer, JSON.stringify({ 'type':'dg', 'position': position, 'rotation':rotation }));
+        }
+      }
       if (position.x < 0) {
         position.x = -position.x;
       }
@@ -325,7 +345,7 @@ window.onload = function() {
         position.z = -position.z;
       }
       document.getElementById("currentBlockCoord").innerHTML = "currently in block x: " + Math.floor(position.x/37.5).toString() + " ~ z: " + Math.floor(position.z/37.5).toString();
-  }, 100);
+  }, 200);
 
   // Creates an avatar texture capture context by grabbing audio from
   // the web cam. This isn't necessary for broadcasting datagram updates.
@@ -338,9 +358,19 @@ window.onload = function() {
           var i = 0;
 
           var interval = setInterval(function() {
+            if ((room == null) || ("undefined" === typeof room)) {
+              console.log("ROOM NOT CONNECTED >> no avatar broadcast");
+              return;
+            }
             context.drawImage(video, 0, 0, 256, 256);
             var dataURL = canvas.toDataURL('image/jpeg', 0.1);
-            socket.emit('avatar-face', { 'memedata': dataURL, 'memeperp': socket.id });
+            console.log("created avatar face with " + dataURL);
+            var peers = room.getPeers();
+            for (var peer in peers) {
+              if (peer !== my_peer_id) {
+                  room.sendTo(peer, JSON.stringify( {'type':'avatar-face', 'imagebuffer': dataURL} ) );
+              }
+            }
         }, 300);
     });
     navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
